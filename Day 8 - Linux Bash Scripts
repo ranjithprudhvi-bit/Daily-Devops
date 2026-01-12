@@ -1,0 +1,123 @@
+The production support team of xFusionCorp Industries is working on developing some bash scripts to automate different day to day tasks. One is to create a bash script for taking websites backup. They have a static website running on App Server 1 in Stratos Datacenter, and they need to create a bash script named media_backup.sh which should accomplish the following tasks. (Also remember to place the script under /scripts directory on App Server 1).
+
+
+a. Create a zip archive named xfusioncorp_media.zip of /var/www/html/media directory.
+
+b. Save the archive in /backup/ on App Server 1. This is a temporary storage, as backups from this location will be clean on weekly basis. Therefore, we also need to save this backup archive on Nautilus Backup Server.
+
+c. Copy the created archive to Nautilus Backup Server server in /backup/ location.
+
+d. Please make sure script won't ask for password while copying the archive file. Additionally, the respective server user (for example, tony in case of App Server 1) must be able to run it.
+
+e. Do not use sudo inside the script.
+Note:
+The zip package must be installed on given App Server before executing the script. This package is essential for creating the zip archive of the website files. Install it manually outside the script.
+Automated Website Backup Script – media_backup.sh
+Project: Nautilus Application – Stratos Datacenter
+Server: App Server 1 (stapp01)
+Responsible User: tony
+Backup Target Server: Nautilus Backup Server (stbkp01)
+________________________________________
+1️⃣ Task Objective
+Create a bash script to automate the backup of a static website running on /var/www/html/media:
+1.	Create a zip archive of /var/www/html/media.
+2.	Save it locally in /backup.
+3.	Copy the backup to the remote backup server at /backup.
+4.	Ensure passwordless copying (SSH keys).
+5.	Script should be executable by the respective server user (tony) without sudo.
+6.	Ensure reliability for recurring backups.
+________________________________________
+2️⃣ Script Development
+Initial Script Attempt
+#!/bin/bash
+
+# Variables
+SOURCE_DIR="/var/www/html/media"
+BACKUP_DIR="/backup"
+BACKUP_FILE="xfusioncorp_media.zip"
+REMOTE_USER="clint"
+REMOTE_HOST="stbkp01"
+REMOTE_DIR="/backup"
+
+# Creating a zip file
+zip -r ${BACKUP-DIR}/${BACKUP_FILE} ${SOURCE_DIR}
+
+# Copy backup to backup server
+scp ${BACKUP_DIR}/${BACKUP_FILE} ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/scripts/media_backup.sh
+________________________________________
+Mistakes Found
+1.	Wrong Variable Expansion
+zip -r ${BACKUP-DIR}/${BACKUP_FILE} ${SOURCE_DIR}
+•	BACKUP-DIR is incorrect; shell interprets - as a subtraction operator.
+•	Effect: zip failed with No such file or directory.
+2.	Non-existent directories
+•	/backup did not exist on App Server initially.
+•	Effect: Script failed to create zip (zip I/O error: No such file or directory).
+3.	SCP command pointing incorrectly
+scp ${BACKUP_DIR}/${BACKUP_FILE} ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/scripts/media_backup.sh
+•	Incorrect target path (/scripts/media_backup.sh instead of /backup on remote server).
+________________________________________
+Final Corrected Script
+#!/bin/bash
+
+# Variables
+SOURCE_DIR="/var/www/html/media"
+BACKUP_DIR="/backup"
+BACKUP_FILE="xfusioncorp_media.zip"
+REMOTE_USER="clint"
+REMOTE_HOST="stbkp01"
+REMOTE_DIR="/backup"
+
+# Ensure backup directory exists
+mkdir -p ${BACKUP_DIR}
+
+# Create zip archive
+zip -r ${BACKUP_DIR}/${BACKUP_FILE} ${SOURCE_DIR}
+
+# Copy backup to backup server
+scp ${BACKUP_DIR}/${BACKUP_FILE} ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
+________________________________________
+3️⃣ Commands Explanation
+Command	Explanation
+mkdir -p ${BACKUP_DIR}	Creates the local backup directory /backup if it doesn’t exist. -p ensures parent directories are created if needed.
+zip -r ${BACKUP_DIR}/${BACKUP_FILE} ${SOURCE_DIR}	Creates a recursive zip archive of the media folder, storing it as /backup/xfusioncorp_media.zip. -r ensures all files and subdirectories are included.
+scp ${BACKUP_DIR}/${BACKUP_FILE} ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/	Securely copies the backup zip to the remote backup server at /backup. Passwordless SSH ensures no prompt occurs.
+________________________________________
+4️⃣ Validation Steps
+1.	Check local backup
+ls -lh /backup
+Output:
+-rw-r--r-- 1 tony tony 1024 Jan 06 12:30 xfusioncorp_media.zip
+2.	Check remote backup
+ssh clint@stbkp01 ls -lh /backup
+Output:
+-rw-r--r-- 1 clint clint 1024 Jan 06 12:31 xfusioncorp_media.zip
+3.	Optional content verification
+unzip -l /backup/xfusioncorp_media.zip
+Shows all website files inside the archive.
+✅ All validations successful. Backup archive exists on both local and remote servers.
+________________________________________
+5️⃣ Key Learnings & Takeaways
+1.	Variable syntax matters – Always use _ or alphanumeric names, not -.
+2.	Check directories – Ensure target directories exist before writing files.
+3.	SCP path accuracy – Always verify the target path on remote servers.
+4.	Passwordless SSH – Essential for automation and cron jobs.
+5.	Testing before automation – Always manually verify script behavior.
+________________________________________
+6️⃣ Outcome
+•	Backup script is now fully functional and reliable.
+•	Can be scheduled via cron for automated backups.
+•	Complies with DevOps best practices:
+o	No sudo required
+o	No interactive password prompts
+o	Logs and validation possible
+o	Remote copy ensured
+________________________________________
+7️⃣ Optional Next Steps (Pro DevOps)
+1.	Add timestamp to the backup:
+BACKUP_FILE="xfusioncorp_media_$(date +%F_%H%M).zip"
+2.	Add logging:
+echo "Backup completed at $(date)" >> /backup/backup.log
+3.	Automate using cron:
+crontab -e
+0 2 * * * /scripts/media_backup.sh
