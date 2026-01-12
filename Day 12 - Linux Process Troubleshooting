@@ -1,3 +1,297 @@
 The production support team of xFusionCorp Industries has deployed some of the latest monitoring tools to keep an eye on every service, application, etc. running on the systems. One of the monitoring systems reported about Apache service unavailability on one of the app servers in Stratos DC.
 Identify the faulty app host and fix the issue. Make sure Apache service is up and running on all app hosts. They might not have hosted any code yet on these servers, so you don’t need to worry if Apache isn’t serving any pages. Just make sure the service is up and running. Also, make sure Apache is running on port 8082 on all app servers.
 
+🛠️ Apache Service Unavailability – Incident Resolution Report
+
+Project Nautilus | xFusionCorp Industries
+
+📌 Task Overview
+Incident Summary
+
+The production monitoring system at xFusionCorp Industries reported that the Apache HTTP service was unavailable on one of the application servers in the Stratos Datacenter. Since Apache is a core component of the Application Tier (LAMP stack), immediate investigation and resolution were required.
+
+🏗️ Background Knowledge (Why This Task Matters)
+Project Nautilus Architecture
+
+Project Nautilus follows a three-tier enterprise architecture:
+
+Client Tier: Web Browsers
+
+Application Tier:
+
+Linux
+
+Apache HTTP Server
+
+PHP
+
+Data Tier: MariaDB
+
+Load Balancer: Nginx
+
+The application tier consists of multiple Apache servers:
+
+stapp01
+
+stapp02
+
+stapp03
+
+Why Apache Availability Is Critical
+
+Load balancers rely on healthy backend services
+
+Even if no application code is deployed, service availability is mandatory
+
+Monitoring alerts must be resolved to:
+
+Maintain SLA
+
+Prevent cascading failures
+
+Ensure readiness for future deployments
+
+🎯 Task Objective
+
+Identify the faulty application server
+
+Ensure Apache is:
+
+Installed
+
+Running
+
+Enabled at boot
+
+Listening on port 8082
+
+Confirm Apache is running correctly on all app servers
+
+🔐 Prerequisites & Assumptions
+Access Requirements
+
+Login as a normal user
+
+Escalate privileges using sudo
+
+Root access required for:
+
+Service management
+
+Configuration changes
+
+Required Components
+
+httpd package
+
+systemd
+
+Apache configuration file:
+
+/etc/httpd/conf/httpd.conf
+
+🧪 Initial Investigation
+Step 1: Check Apache Service Status
+sudo systemctl status httpd
+
+Command Explanation
+
+systemctl → systemd service manager
+
+status → displays:
+
+Service state
+
+Recent logs
+
+Failure reasons
+
+Observation
+
+Apache was not running on the faulty host
+
+On some servers, Apache was installed but disabled
+
+On others, Apache was running on the wrong port
+
+❌ Mistake #1 – Incorrect Log Interpretation
+What Was Done
+
+You checked system logs using:
+
+journalctl -xe
+
+Why This Was a Mistake
+
+journalctl -xe shows system-wide logs
+
+The output contained:
+
+Boot-time messages
+
+NFS mount warnings
+
+Legacy network config warnings
+
+No Apache-related errors were present
+
+Key Learning
+
+Apache service issues do not always generate system-level errors.
+
+Correct Approach
+
+Filter logs specifically for Apache:
+
+journalctl -u httpd
+
+❌ Mistake #2 – Assuming Journal Errors Caused Apache Failure
+What Happened
+
+mount: permission denied messages were seen
+
+/etc/sysconfig/network missing warning appeared
+
+Why This Was Incorrect
+
+These were:
+
+Boot-time warnings
+
+Non-critical messages
+
+They did not affect Apache service
+
+Resolution
+
+Focused on service state and configuration, not unrelated logs.
+
+🛠️ Fix Implementation
+Step 2: Install Apache (If Missing)
+sudo yum install -y httpd
+
+Explanation
+
+yum → enterprise package manager
+
+Resolves dependencies
+
+-y → non-interactive (automation-friendly)
+
+Step 3: Configure Apache to Listen on Port 8082
+sudo vi /etc/httpd/conf/httpd.conf
+
+
+Changed:
+
+Listen 80
+
+
+To:
+
+Listen 8082
+
+Why This Was Required
+
+Load balancer expects backend services on port 8082
+
+Default Apache port (80) caused health check failures
+
+❌ Mistake #3 – Apache Running on Default Port (80)
+Impact
+
+Apache appeared “running”
+
+Monitoring still reported service as down
+
+Load balancer could not reach backend
+
+Solution
+
+Corrected Listen directive
+
+Restarted Apache
+
+Step 4: Start and Enable Apache
+sudo systemctl start httpd
+sudo systemctl enable httpd
+
+Explanation
+
+start → immediate availability
+
+enable → service survives reboot
+
+Step 5: Restart Apache After Configuration Change
+sudo systemctl restart httpd
+
+Best Practice
+
+Always restart services after modifying config files
+
+✅ Verification & Validation
+Verify Service Status
+sudo systemctl status httpd
+
+
+Expected:
+
+Active: active (running)
+
+Verify Port Listening
+sudo ss -tulnp | grep 8082
+
+
+Expected:
+
+LISTEN 0 128 :::8082 :::* httpd
+
+Local Connectivity Test
+curl http://localhost:8082
+
+
+Result:
+
+No connection error
+
+Default Apache response acceptable
+
+🔐 Security & Best Practices Followed
+
+No direct root login
+
+Used sudo for privilege escalation
+
+Minimal service exposure
+
+Consistent configuration across all app servers
+
+Verified changes before closure
+
+📚 Key Learnings
+
+Monitoring alerts may indicate configuration drift, not crashes
+
+Always verify:
+
+Service state
+
+Port binding
+
+System logs ≠ Application logs
+
+Apache outages often occur without errors
+
+Uniform configuration is critical in load-balanced environments
+
+🧾 Final Task Summary
+Item	Details
+Task	Apache Service Restoration
+Servers	stapp01, stapp02, stapp03
+Port	8082
+Root Cause	Service stopped / wrong port
+Resolution	Installed, configured, started Apache
+Status	✅ Successful
+🏁 Conclusion
+
+The Apache service unavailability issue was successfully resolved by identifying configuration inconsistencies and service state issues rather than relying solely on system logs. Apache is now running, enabled, and listening on the correct port across all application servers, restoring full application tier readiness.
