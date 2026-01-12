@@ -1,0 +1,87 @@
+The system admins team of xFusionCorp Industries has set up some scripts on jump host that run on regular intervals and perform operations on all app servers in Stratos Datacenter. To make these scripts work properly we need to make sure the thor user on jump host has password-less SSH access to all app servers through their respective sudo users (i.e tony for app server 1). Based on the requirements, perform the following:
+
+
+Set up a password-less authentication from user thor on jump host to all app servers through their respective sudo users.
+
+🎯 Task Objective
+Configure password-less SSH authentication so that:
+•	User thor on jump_host
+•	Can SSH without password
+•	To all App Servers
+•	Using their respective sudo users:
+App Server	User
+stapp01	tony
+stapp02	steve
+stapp03	banner
+________________________________________
+🖥️ Servers Involved
+🔐 Source (Jump Host)
+•	Host: jump_host.stratos.xfusioncorp.com
+•	User: thor
+🎯 Targets (App Servers)
+•	stapp01 → tony@172.16.238.10
+•	stapp02 → steve@172.16.238.11
+•	stapp03 → banner@172.16.238.12
+________________________________________
+✅ Step-by-Step Implementation (With Explanation)
+________________________________________
+1️⃣ Login to Jump Host as thor
+ssh thor@jump_host.stratos.xfusioncorp.com
+📌 Explanation
+•	Logs into the jump server where automation scripts are executed
+•	Password: mjolnir123
+________________________________________
+2️⃣ Generate SSH Key Pair (If Not Already Present)
+ssh-keygen -t rsa -b 4096
+📌 Explanation
+•	ssh-keygen → Creates SSH key pair
+•	-t rsa → RSA encryption
+•	-b 4096 → Strong 4096-bit key
+•	Press Enter for default location
+•	Leave passphrase empty (required for automation)
+📁 Keys created:
+•	Private key → ~/.ssh/id_rsa
+•	Public key → ~/.ssh/id_rsa.pub
+________________________________________
+3️⃣ Copy Public Key to App Server 1 (stapp01)
+ssh-copy-id tony@172.16.238.10
+📌 Explanation
+•	Copies thor’s public key to tony’s authorized_keys
+•	Enables password-less SSH
+•	Enter password: Ir0nM@n (last time)
+________________________________________
+4️⃣ Copy Public Key to App Server 2 (stapp02)
+ssh-copy-id steve@172.16.238.11
+📌 Explanation
+•	Sets password-less access from thor → steve
+•	Enter password: Am3ric@
+________________________________________
+5️⃣ Copy Public Key to App Server 3 (stapp03)
+ssh-copy-id banner@172.16.238.12
+📌 Explanation
+•	Sets password-less access from thor → banner
+•	Enter password: BigGr33n
+________________________________________
+6️⃣ Verify Password-less SSH Access
+App Server 1
+ssh tony@172.16.238.10
+App Server 2
+ssh steve@172.16.238.11
+App Server 3
+ssh banner@172.16.238.12
+✅ Expected Result
+•	Login happens without asking for password
+________________________________________
+7️⃣ (Optional but Recommended) Validate sudo Access
+sudo -i
+📌 Confirms scripts can run privileged commands if required
+________________________________________
+🎉 Final Outcome
+✔ Password-less SSH configured from jump host
+✔ thor → all app servers via correct users
+✔ Automation-ready environment
+✔ Secure, scalable access model
+✔ Matches enterprise DevOps best practices
+________________________________________
+🧠 Interview-Ready One-Line Explanation
+“Password-less SSH was configured using RSA key-based authentication by copying the jump host user’s public key to each app server’s authorized_keys file.”
