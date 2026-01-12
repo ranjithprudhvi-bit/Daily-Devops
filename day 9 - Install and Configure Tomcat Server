@@ -1,0 +1,138 @@
+The Nautilus application development team recently finished the beta version of one of their Java-based applications, which they are planning to deploy on one of the app servers in Stratos DC. After an internal team meeting, they have decided to use the tomcat application server. Based on the requirements mentioned below complete the task: a. Install tomcat server on App Server 1. b. Configure it to run on port 5000. c. There is a ROOT.war file on Jump host at location /tmp. Deploy it on this tomcat server and make sure the webpage works directly on base URL i.e curl http://stapp01:5000
+
+Tomcat Installation & Java Application Deployment on App Server 1
+________________________________________
+1️⃣ Task Objective
+The Nautilus application development team required deployment of a Java-based web application using Apache Tomcat on App Server 1 (stapp01) in the Stratos Datacenter.
+🔹 Requirements
+•	Install Apache Tomcat
+•	Configure Tomcat to run on port 5000
+•	Deploy ROOT.war from Jump Host
+•	Ensure application is accessible on base URL:
+•	http://stapp01:5000
+________________________________________
+2️⃣ Environment Details
+Component	Details
+App Server	stapp01
+OS Type	RHEL/CentOS based
+Application Server	Apache Tomcat
+Java Version	OpenJDK 11
+Deployment File	ROOT.war
+Access Method	Jump Host
+________________________________________
+3️⃣ Step-by-Step Implementation
+Step 1: Access App Server
+•	Logged into Jump Host
+•	SSH’d into stapp01
+•	Switched to root for administrative tasks
+✔ Required for package installation and configuration changes
+________________________________________
+Step 2: Java Installation
+•	Installed OpenJDK 11 (Tomcat dependency)
+•	Verified Java installation using java -version
+✔ Java runtime confirmed
+________________________________________
+Step 3: Apache Tomcat Installation
+•	Installed Tomcat using package manager
+•	Verified Tomcat directory structure
+✔ Tomcat installed successfully
+________________________________________
+Step 4: Port Configuration (8080 → 5000)
+•	Located Tomcat configuration using:
+•	whereis tomcat
+•	Identified /etc/tomcat as configuration directory
+•	Edited server.xml
+•	Changed connector port from 8080 to 5000
+✔ Port updated correctly
+________________________________________
+Step 5: Tomcat Service Management
+•	Started Tomcat service
+•	Enabled Tomcat to start on boot
+•	Verified service status
+✔ Tomcat running under tomcat user (non-root)
+________________________________________
+Step 6: Application Deployment
+•	Copied ROOT.war from Jump Host to App Server
+•	Moved WAR file to:
+•	/usr/share/tomcat/webapps/
+•	Set correct ownership (tomcat:tomcat)
+•	Restarted Tomcat for deployment
+✔ Application auto-deployed by Tomcat
+________________________________________
+Step 7: Verification
+•	Tested application using:
+•	curl http://stapp01:5000
+•	Received valid HTML response
+✔ Application accessible on base URL
+✔ Deployment successful
+________________________________________
+4️⃣ Issues Faced, Mistakes & Questions Asked
+❌ Issue 1: Unable to Edit server.xml
+Error:
+E505: "/etc/tomcat/server.xml" is read-only
+Cause:
+•	File opened without proper write permissions
+Solution:
+•	Reopened file using root privileges:
+•	sudo vi /etc/tomcat/server.xml
+________________________________________
+❌ Issue 2: Confusion About Tomcat Configuration Path
+Question Asked:
+“From whereis tomcat, how do I know where server.xml is?”
+Cause:
+•	Multiple Tomcat-related directories returned
+Solution:
+•	Identified /etc/tomcat as configuration directory
+•	Confirmed presence of server.xml using ls and find
+________________________________________
+❌ Issue 3: Confusion Between /usr/share/tomcat/conf and /etc/tomcat
+Question Asked:
+“How can I open conf?”
+Cause:
+•	conf is a directory, not a file
+•	RHEL-based systems separate config and application files
+Solution:
+•	Used cd to enter directory
+•	Learned that /etc/tomcat is the active config location
+________________________________________
+❌ Issue 4: Concern About Running Tomcat as Root
+Question Asked:
+“Tomcat should be run by a user, not by root, right?”
+Clarification:
+•	Root is used only for installation and configuration
+•	Tomcat service runs as tomcat user via systemd
+Verification:
+ps -ef | grep tomcat
+✔ Security best practice followed
+________________________________________
+❌ Issue 5: Understanding systemctl start vs enable
+Question Asked:
+“What do these commands do?”
+Clarification:
+•	start → starts service immediately
+•	enable → ensures service starts on reboot
+✔ Correct usage confirmed
+________________________________________
+5️⃣ Final Validation Output
+curl http://stapp01:5000
+Output:
+<h2>Welcome to xFusionCorp Industries!</h2>
+✔ Confirms application is live and accessible
+________________________________________
+6️⃣ Final Status
+Task	Status
+Tomcat Installed	✅
+Port Changed to 5000	✅
+Application Deployed	✅
+Base URL Accessible	✅
+Security Best Practices	✅
+________________________________________
+7️⃣ Key Learnings
+•	How to locate configuration files using whereis and find
+•	Difference between application directories and config directories
+•	Importance of running services as non-root users
+•	Correct Tomcat deployment workflow
+•	Real-world troubleshooting of permission and configuration issues
+________________________________________
+8️⃣ Conclusion
+The task was successfully completed following Linux and DevOps best practices. All issues encountered were resolved through systematic troubleshooting and verification. The Java web application is now running correctly on Apache Tomcat and accessible via the required base URL.
