@@ -1,0 +1,227 @@
+We have one of our websites up and running on our Nautilus infrastructure in Stratos DC. Our security team has raised a concern that right now Apache’s port i.e 3001 is open for all since there is no firewall installed on these hosts. So we have decided to add some security layer for these hosts and after discussions and recommendations we have come up with the following requirements: 1. Install iptables and all its dependencies on each app host. 2. Block incoming port 3001 on all apps for everyone except for LBR host. 3. Make sure the rules remain, even after system reboot.
+
+Securing Application Port Access Using iptables
+1. Task Background & Objective
+Project Context
+
+As part of the Nautilus Project infrastructure hardening, the requirement was to secure application access using host-based firewall rules.
+
+Architecture Overview
+
+LBR (Load Balancer): 172.16.238.14
+
+Application Servers:
+
+stapp01
+
+stapp02
+
+stapp03
+
+Application Port: 3001
+
+Firewall Tool: iptables
+
+Security Requirement
+
+Allow only the Load Balancer to access the application running on port 3001.
+Block all other sources.
+
+2. Core Concepts (Background Knowledge)
+What is iptables?
+
+iptables is a Linux kernel firewall that processes network packets using rules evaluated in order.
+
+Important Chains Used
+Chain	Purpose
+INPUT	Incoming traffic to the server
+OUTPUT	Outgoing traffic from the server
+FORWARD	Routed traffic (not used here)
+Rule Evaluation Logic
+
+Rules are evaluated top to bottom
+
+First match wins
+
+Wrong order = correct rule but never executed
+
+3. Required Firewall Logic (Design)
+
+The correct rule sequence must be:
+
+Allow established connections
+
+Allow basic services (ICMP, loopback, SSH)
+
+Allow port 3001 only from LBR
+
+Drop port 3001 from all others
+
+Reject everything else
+
+4. Commands Used & Explanation
+4.1 Viewing Firewall Rules with Order
+iptables -L -n -v --line-numbers
+
+
+Explanation:
+
+-L → List rules
+
+-n → No DNS resolution
+
+-v → Verbose (packet counters)
+
+--line-numbers → Shows rule order (critical for debugging)
+
+4.2 Allow Port 3001 Only from LBR
+iptables -A INPUT -s 172.16.238.14 -p tcp --dport 3001 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+
+Explanation:
+
+-s → Source IP (LBR)
+
+--dport 3001 → Application port
+
+NEW,ESTABLISHED → New + ongoing connections
+
+4.3 Block Port 3001 from Everyone Else
+iptables -A INPUT -p tcp --dport 3001 -j DROP
+
+
+Explanation:
+
+Drops all unmatched traffic to port 3001
+
+Silent drop (no response)
+
+4.4 Reject Remaining Traffic
+iptables -A INPUT -j REJECT --reject-with icmp-host-prohibited
+
+
+Explanation:
+
+Rejects all remaining traffic
+
+Sends ICMP error (clean firewall behavior)
+
+4.5 Saving Firewall Rules
+service iptables save
+
+
+Explanation:
+
+Persists rules to /etc/sysconfig/iptables
+
+Ensures rules survive reboot
+
+5. Final Correct Firewall Rules (INPUT Chain)
+
+Example from stapp03:
+
+1 ACCEPT  state RELATED,ESTABLISHED
+2 ACCEPT  icmp
+3 ACCEPT  lo
+4 ACCEPT  ssh (22)
+5 ACCEPT  tcp 3001 from 172.16.238.14
+6 DROP    tcp 3001 from all others
+7 REJECT  all remaining traffic
+
+
+✔ Correct order
+✔ No rule shadowing
+✔ Meets all security requirements
+
+6. Mistakes Made & Lessons Learned
+❌ Mistake 1: ACCEPT rule placed below REJECT
+
+Problem:
+
+REJECT all
+ACCEPT tcp 3001 from LBR
+
+
+Impact:
+
+ACCEPT rule never matched
+
+LBR access blocked
+
+✅ Solution:
+Reordered rules using delete + insert.
+
+❌ Mistake 2: Confusion about WHERE to apply rules
+
+Question Asked:
+
+Should step 3 be done on LBR or App Server?
+
+✅ Correct Understanding:
+
+Rules must be applied on Application Servers
+
+LBR only initiates connections
+
+❌ Mistake 3: Verifying rules without checking order
+
+Issue:
+
+Rules existed but were ineffective
+
+✅ Solution:
+
+iptables -L -n -v --line-numbers
+
+❌ Mistake 4: Assuming curl success alone is enough
+
+Reality:
+
+Curl must be tested from:
+
+LBR (should work)
+
+Non-LBR host (should fail)
+
+7. Validation & Testing
+Allowed (Expected ✅)
+curl http://stapp01:3001   # from LBR
+
+Blocked (Expected ❌)
+curl http://stapp01:3001   # from other servers
+
+Configuration Verification
+cat /etc/sysconfig/iptables
+
+
+✔ Rules persisted
+✔ Order preserved
+
+8. Final Status Summary
+Server	Status
+stapp01	✅ Correct
+stapp02	✅ Correct
+stapp03	✅ Correct
+9. Key Takeaways (Interview Gold)
+
+iptables is order-sensitive
+
+ACCEPT specific → DROP specific → REJECT rest
+
+Always verify with --line-numbers
+
+Functional testing is mandatory
+
+Saving rules is not optional
+
+10. Conclusion
+
+The firewall configuration now:
+
+Enforces strict access control
+
+Prevents unauthorized access
+
+Follows best security practices
+
+Fully satisfies task requirements
