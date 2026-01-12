@@ -1,0 +1,58 @@
+As part of the temporary assignment to the Nautilus project, a developer named ammar requires access for a limited duration. To ensure smooth access management, a temporary user account with an expiry date is needed. Here's what you need to do: Create a user named ammar on App Server 3 in Stratos Datacenter. Set the expiry date to 2024-01-28, ensuring the user is created in lowercase as per standard protocol.
+To accomplish this task on App Server 3 in the Stratos Datacenter, you’ll need to log in to the server and run the appropriate Linux user management command. Here’s the exact step-by-step process:
+
+✅ Steps to Create Temporary User ammar
+1.	Access App Server 3 Use SSH to connect:
+bash
+ssh banner@<app-server-3-ip>
+(Replace <app-server-3-ip> with the actual IP or hostname of App Server 3.)
+
+2.	Create the user ammar with expiry date Run the following command:
+bash
+sudo useradd -e 2024-01-28 ammar
+o	-e specifies the account expiry date.
+o	ammar is lowercase, following protocol.
+
+3.	Set a password for the user
+bash
+sudo passwd ammar
+(You’ll be prompted to enter and confirm a password.)
+
+4.	Verify the account expiry
+bash
+sudo chage -l ammar
+Look for:
+Code
+Account expires : Jan 28, 2024
+
+🔒 Notes
+•	After 2024-01-28, the account will automatically be disabled.
+•	If you need to extend or modify the expiry later, you can use:
+bash
+sudo usermod -e YYYY-MM-DD ammar
+
+Doubts: what is sudo and -l
+Great question — let’s break it down clearly:
+🖥️ What is sudo?
+•	sudo stands for “superuser do”.
+•	It lets a regular user run commands with administrative (root) privileges.
+•	Many system management tasks (like adding users, changing passwords, modifying system files) require elevated permissions.
+•	Example:
+bash
+sudo useradd ammar
+Here, sudo ensures you have the rights to create a new user.
+📄 What is the -l option in chage?
+•	chage is a command used to view or change user password expiry information.
+•	The -l option means “list”.
+•	It displays the account’s password aging and expiry details.
+•	Example:
+bash
+sudo chage -l ammar
+This will show information like:
+o	Last password change
+o	Password expiry
+o	Account expiry (the date you set, e.g., Jan 28, 2024)
+o	Warning period before expiry
+✅ Putting it Together
+•	sudo → gives you permission to run admin-level commands.
+•	chage -l → lists the expiry and password details for a user account.
