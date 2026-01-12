@@ -1,0 +1,73 @@
+Following a security audit, the xFusionCorp Industries security team has opted to enhance application and server security with SELinux. To initiate testing, the following requirements have been established for App server 1 in the Stratos Datacenter:
+
+
+1.	Install the required SELinux packages.
+2.	Permanently disable SELinux for the time being; it will be re-enabled after necessary configuration changes.
+3.	No need to reboot the server, as a scheduled maintenance reboot is already planned for tonight.
+4.	Disregard the current status of SELinux via the command line; the final status after the reboot should be disabled.
+
+
+________________________________________
+🎯 Task Summary (What exactly we must do)
+On App Server 1 (stapp01):
+1.	Install required SELinux packages
+2.	Permanently disable SELinux
+3.	Do NOT reboot the server now
+4.	Ignore current SELinux status; after reboot it must be Disabled
+________________________________________
+🔐 Step 1: Login to App Server 1
+From the Jump Server:
+ssh tony@stapp01.stratos.xfusioncorp.com
+Enter password:
+Ir0nM@n
+________________________________________
+📦 Step 2: Install Required SELinux Packages
+Most Stratos servers run RHEL / CentOS / Alma / Rocky based OS.
+✅ Command:
+sudo yum install -y selinux-policy selinux-policy-targeted libselinux-utils policycoreutils
+🔍 Explanation:
+•	selinux-policy → Core SELinux rules
+•	selinux-policy-targeted → Targeted SELinux mode (default)
+•	libselinux-utils → Utilities like getenforce
+•	policycoreutils → Tools like semanage, restorecon
+•	-y → Auto-confirm installation
+Even if SELinux is disabled later, packages must be installed as per requirement.
+________________________________________
+⚙️ Step 3: Permanently Disable SELinux (Correct & Required Way)
+Open SELinux configuration file:
+sudo vi /etc/selinux/config
+Modify this line:
+SELINUX=disabled
+Ensure it is exactly:
+SELINUX=disabled
+(❌ Not enforcing, ❌ not permissive)
+Save & Exit:
+•	Press ESC
+•	Type :wq
+•	Press Enter
+________________________________________
+🧠 Why This Works (Important for Interviews)
+•	/etc/selinux/config controls boot-time SELinux state
+•	Even if getenforce still shows Enforcing or Permissive,
+👉 after the scheduled reboot, SELinux will be Disabled
+•	This satisfies the audit requirement
+________________________________________
+❌ What NOT to Do
+❌ Do NOT run:
+setenforce 0
+Reason:
+•	It only changes runtime state   
+•	Not permanent
+•	Task explicitly says ignore current status
+________________________________________
+✅ (Optional) Verification – Not Required but Good Practice
+You may check the config file:
+cat /etc/selinux/config | grep SELINUX
+Expected output:
+SELINUX=disabled
+________________________________________
+🏁 Final Result After Reboot (Expected)
+getenforce
+Output:
+Disabled
+✔️ Task completed successfully.
