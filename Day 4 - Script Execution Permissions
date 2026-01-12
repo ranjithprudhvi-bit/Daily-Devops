@@ -1,0 +1,64 @@
+In a bid to automate backup processes, the xFusionCorp Industries sysadmin team has developed a new bash script named xfusioncorp.sh. While the script has been distributed to all necessary servers, it lacks executable permissions on App Server 1 within the Stratos Datacenter.
+
+Your task is to grant executable permissions to the /tmp/xfusioncorp.sh script on App Server 1. Additionally, ensure that all users have the capability to execute it.
+
+
+Below is a complete, clear, and exam-/interview-ready solution with exact commands, detailed explanations, and a LinkedIn success post as requested.
+________________________________________
+🎯 Task Objective
+On App Server 3 (stapp03) in the Stratos Datacenter:
+•	Grant executable permission to the script
+👉 /tmp/xfusioncorp.sh
+•	Ensure all users (owner, group, others) can execute it
+________________________________________
+🖥️ Target Server Details
+Server	IP	User	Purpose
+stapp03	172.16.238.12	banner	Nautilus App Server 3
+________________________________________
+✅ Step-by-Step Commands with Detailed Explanation
+________________________________________
+1️⃣ Connect to App Server 3 using SSH
+ssh banner@172.16.238.12
+🔍 Explanation
+•	ssh → Secure Shell protocol to access remote servers
+•	banner → Non-root user provided for App Server 3
+•	172.16.238.12 → IP address of stapp03
+•	Enter password when prompted: BigGr33n
+________________________________________
+2️⃣ Check Current Permissions of the Script (Recommended)
+ls -l /tmp/xfusioncorp.sh
+🔍 Explanation
+•	ls -l → Displays long listing including file permissions
+•	Helps confirm that the script is not executable
+❌ Example Output (Before)
+-rw-r--r-- 1 root root /tmp/xfusioncorp.sh
+➡️ No x permission means the script cannot be executed
+________________________________________
+3️⃣ Grant Execute Permission to All Users
+chmod a+x /tmp/xfusioncorp.sh
+🔍 Explanation
+•	chmod → Change file permissions
+•	a → All users (owner, group, others)
+•	+x → Add execute permission
+•	Result: Anyone on the system can execute the script
+________________________________________
+4️⃣ Verify Updated Permissions
+ls -l /tmp/xfusioncorp.sh
+✅ Expected Output (After)
+-rwxr-xr-x 1 root root /tmp/xfusioncorp.sh
+🔍 Explanation
+•	x for owner → executable
+•	x for group → executable
+•	x for others → executable
+•	Task requirement fully met ✅
+________________________________________
+5️⃣ (Optional) Execute the Script to Confirm
+/tmp/xfusioncorp.sh
+🔍 Explanation
+•	Confirms the script runs without permission issues
+________________________________________
+🎉 Final Outcome
+✔ Executable permission successfully added
+✔ All users can execute the backup script
+✔ Automation requirement satisfied
+✔ Linux permission best practices applied
