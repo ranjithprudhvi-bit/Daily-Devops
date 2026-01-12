@@ -1,0 +1,85 @@
+The Nautilus system admins team has prepared scripts to automate several day-to-day tasks. They want them to be deployed on all app servers in Stratos DC on a set schedule. Before that they need to test similar functionality with a sample cron job. Therefore, perform the steps below:
+
+
+a. Install cronie package on all Nautilus app servers and start crond service.
+
+b. Add a cron */5 * * * * echo hello > /tmp/cron_text for root user.
+
+
+
+Task Summary
+You need to do the same steps on all Nautilus App Servers:
+•	stapp01
+•	stapp02
+•	stapp03
+Objectives
+1.	Install cronie
+2.	Start & enable crond
+3.	Add a root cron job:
+4.	*/5 * * * * echo hello > /tmp/cron_text
+________________________________________
+🔐 Step 1: Login to App Servers (from Jump Server)
+First, login to the jump server:
+ssh thor@jump_host.stratos.xfusioncorp.com
+Then login to each app server one by one:
+App Server 1
+ssh tony@stapp01.stratos.xfusioncorp.com
+App Server 2
+ssh steve@stapp02.stratos.xfusioncorp.com
+App Server 3
+ssh banner@stapp03.stratos.xfusioncorp.com
+________________________________________
+🔄 Step 2: Switch to Root User
+Cron job must be added for root, so switch user:
+sudo -i
+📌 Explanation
+•	sudo -i gives you an interactive root shell
+•	Required to manage services and root crontab
+________________________________________
+📦 Step 3: Install cronie
+(Works for RHEL / CentOS / Amazon Linux)
+yum install -y cronie
+📌 Explanation
+•	cronie → Cron daemon package
+•	-y → Automatically confirms installation
+________________________________________
+▶️ Step 4: Start and Enable crond Service
+systemctl start crond
+systemctl enable crond
+📌 Explanation
+•	start crond → Starts cron service immediately
+•	enable crond → Ensures cron starts on every reboot
+Verify service status:
+systemctl status crond
+________________________________________
+⏱️ Step 5: Add Cron Job for Root
+Open root crontab:
+crontab -e
+Add this line:
+*/5 * * * * echo hello > /tmp/cron_text
+Save and exit.
+📌 Explanation
+•	*/5 → Every 5 minutes
+•	* * * * → Every hour, day, month, weekday
+•	echo hello > /tmp/cron_text → Writes hello to file
+•	Runs as root
+________________________________________
+✅ Step 6: Verify Cron Job
+Wait 5 minutes, then run:
+cat /tmp/cron_text
+Expected output:
+hello
+Also confirm cron entry:
+crontab -l
+________________________________________
+🔁 Repeat Same Steps
+Repeat Steps 2–6 on:
+•	stapp01
+•	stapp02
+•	stapp03
+________________________________________
+🧠 Key Points (Interview / Exam Ready)
+•	cronie provides cron daemon
+•	Root cron jobs use crontab -e as root
+•	systemctl enable ensures persistence
+•	Cron logs normally go to /var/log/cron
