@@ -5,3 +5,302 @@ The system admins team of xFusionCorp Industries needs to deploy a new applicati
 3. Create an index.html file with content Welcome! under Nginx document root.
 4. For final testing try to access the App Server 3 link (either hostname or IP) from jump host using curl command. For example curl -Ik https://<app-server-ip>/.
 
+What is the task?
+
+We need to prepare App Server 3 (stapp03) for application deployment by:
+
+Installing and configuring Nginx
+
+Deploying an existing self-signed SSL certificate
+
+Serving a basic index.html page
+
+Validating HTTPS access from the jump host
+
+🔹 Why is this required in a real-world enterprise?
+
+In enterprise environments:
+
+Nginx is commonly used as:
+
+A reverse proxy
+
+An SSL termination point
+
+A lightweight web server
+
+SSL/TLS ensures:
+
+Encrypted communication
+
+Compliance with security standards
+
+A test page (index.html) confirms:
+
+Web service is functional
+
+SSL is correctly configured
+
+Validation from a jump host simulates:
+
+External or controlled access
+
+Security boundary checks
+
+This mirrors pre-production readiness checks before deploying real applications.
+
+🔹 Which server(s) does this apply to?
+Server	Reason
+App Server 3 (stapp03)	Target server for application deployment
+Jump Host	Secure access point to validate HTTPS connectivity
+2️⃣ Prerequisites & Assumptions
+🔹 Required Access
+
+root or sudo user on stapp03
+
+SSH access to jump host
+
+🔹 Required Files
+
+Already available on App Server 3:
+
+/tmp/nautilus.crt
+
+/tmp/nautilus.key
+
+🔹 Pre-Checks (Very Important)
+
+Before starting, always validate:
+
+hostname
+
+
+✔️ Ensure you are on stapp03
+
+ls -l /tmp/nautilus.*
+
+
+✔️ Confirm certificate and key exist
+✔️ Confirm correct permissions
+
+3️⃣ Exact Commands – Step-by-Step (Production Grade)
+🔹 Step 1: Install Nginx on App Server 3
+sudo yum install -y nginx
+
+🔍 Explanation
+
+yum → Enterprise package manager (RHEL/CentOS)
+
+install → Install software
+
+-y → Non-interactive (automation-friendly)
+
+✅ Why this is best practice
+
+Uses OS-verified repositories
+
+Ensures dependency integrity
+
+Repeatable across environments
+
+🔹 Step 2: Enable & Start Nginx
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+🔍 Explanation
+
+enable → Starts Nginx automatically on reboot
+
+start → Starts service immediately
+
+✅ Best practice
+
+Ensures service persistence across reboots.
+
+🔹 Step 3: Create Secure SSL Directory
+sudo mkdir -p /etc/nginx/ssl
+
+🔍 Explanation
+
+/etc/nginx/ssl → Standard secure location
+
+-p → Avoids errors if directory exists
+
+🔹 Step 4: Move SSL Certificate & Key
+sudo mv /tmp/nautilus.crt /etc/nginx/ssl/
+sudo mv /tmp/nautilus.key /etc/nginx/ssl/
+
+🔍 Explanation
+
+/tmp is temporary and unsafe
+
+/etc/nginx/ssl is persistent and secure
+
+🔹 Step 5: Secure SSL Key Permissions (Critical)
+sudo chmod 600 /etc/nginx/ssl/nautilus.key
+sudo chmod 644 /etc/nginx/ssl/nautilus.crt
+
+🔍 Explanation
+
+Private key: owner-only access
+
+Certificate: readable by Nginx
+
+🔐 Security Reason
+
+Prevents unauthorized key access.
+
+🔹 Step 6: Create index.html
+echo "Welcome!" | sudo tee /usr/share/nginx/html/index.html
+
+🔍 Explanation
+
+Default Nginx document root
+
+tee ensures root-level write access
+
+🔹 Step 7: Configure SSL Virtual Host
+
+Edit Nginx configuration:
+
+sudo vi /etc/nginx/conf.d/ssl.conf
+
+📄 Add the following configuration:
+server {
+    listen 443 ssl;
+    server_name _;
+
+    ssl_certificate     /etc/nginx/ssl/nautilus.crt;
+    ssl_certificate_key /etc/nginx/ssl/nautilus.key;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+
+🔍 Explanation
+
+listen 443 ssl → HTTPS listener
+
+server_name _ → Default server
+
+try_files → Prevents directory traversal
+
+🔹 Step 8: Validate Nginx Configuration
+sudo nginx -t
+
+✅ Expected Output
+syntax is ok
+test is successful
+
+🔹 Step 9: Reload Nginx
+sudo systemctl reload nginx
+
+🔍 Why reload?
+
+Applies changes
+
+Zero downtime
+
+4️⃣ Verification & Validation
+🔹 Check Service Status
+sudo systemctl status nginx
+
+
+✔️ Must show active (running)
+
+🔹 Verify Listening Port
+sudo ss -tulnp | grep 443
+
+
+✔️ Confirms HTTPS port open
+
+🔹 Test from Jump Host
+curl -Ik https://<APP_SERVER_3_IP>
+
+✅ Expected Output
+HTTP/1.1 200 OK
+Server: nginx
+
+
+-I → headers only
+-k → allows self-signed cert
+
+5️⃣ Errors & Troubleshooting
+❌ Error: Nginx fails to start
+
+Fix
+
+journalctl -xe | grep nginx
+
+❌ Error: Permission denied (SSL key)
+
+Fix
+
+chmod 600 /etc/nginx/ssl/nautilus.key
+
+❌ Error: curl fails with SSL error
+
+Fix
+
+Use -k for self-signed cert
+
+Verify certificate paths
+
+❌ Error: Port 443 blocked
+
+Fix
+
+sudo firewall-cmd --add-service=https --permanent
+sudo firewall-cmd --reload
+
+6️⃣ Security & Best Practices
+🔐 Security Considerations
+
+SSL private key protected
+
+HTTPS enforced
+
+No plaintext traffic
+
+⭐ Best Practices Followed
+
+Standard directory structure
+
+Zero-downtime reload
+
+Least privilege permissions
+
+External validation from jump host
+
+🔄 Alternatives
+
+Apache with mod_ssl
+
+Let’s Encrypt (for production)
+
+Nginx as reverse proxy to app
+
+7️⃣ Final Task Summary
+✅ What was done
+
+Installed & configured Nginx
+
+Deployed SSL certificate
+
+Created test web page
+
+Verified HTTPS access
+
+🖥️ Server
+
+App Server 3 (stapp03)
+
+🎯 Final Result
+
+Secure HTTPS endpoint ready
+
+Server prepared for application deployment
