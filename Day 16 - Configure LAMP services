@@ -1,0 +1,209 @@
+xFusionCorp Industries is planning to host a WordPress website on their infra in Stratos Datacenter. They have already done infrastructure configuration—for example, on the storage server they already have a shared directory /vaw/www/html that is mounted on each app host under /var/www/html directory. Please perform the following steps to accomplish the task: a. Install httpd, php and its dependencies on all app hosts. b. Apache should serve on port 3001 within the apps. c. Install/Configure MariaDB server on DB Server. d. Create a database named kodekloud_db7 and create a database user named kodekloud_cap identified as password Rc5C9EyvbU. Further make sure this newly created user is able to perform all operation on the database you created. e. Finally you should be able to access the website on LBR link, by clicking on the App button on the top bar. You should see a message like App is able to connect to the database using user kodekloud_cap
+
+Task Understanding
+🔹 What is the task?
+
+You are setting up a WordPress-ready LAMP application environment in a three-tier architecture:
+
+Application Tier (stapp01, stapp02, stapp03)
+→ Apache + PHP configured to serve traffic on port 3001
+
+Data Tier (DB Server)
+→ MariaDB installed, database & user created
+
+Load Balancer (LBR)
+→ Routes traffic to app servers
+
+Shared Storage
+→ /vaw/www/html mounted to /var/www/html on all app servers
+
+Finally, verify end-to-end connectivity by accessing the app via the Load Balancer URL, confirming DB connectivity.
+
+🔹 Why is this required in a real enterprise environment?
+
+In real-world enterprises:
+
+Applications are horizontally scalable (multiple app servers)
+
+Shared storage ensures consistent content
+
+Database is isolated for security and performance
+
+Load balancer provides high availability
+
+Ports are customized (e.g., 3001) for multi-tenant infra
+
+This mirrors production-grade hosting of CMS platforms like WordPress.
+
+🔹 Which servers are involved & why?
+Server	Purpose
+stapp01–03	Run Apache + PHP to serve WordPress
+DB Server	Host MariaDB database
+Storage Server	Central shared web root
+Load Balancer	Route client traffic
+2️⃣ Prerequisites & Assumptions
+🔹 Access Required
+
+SSH access to all servers
+
+sudo or root privileges
+
+🔹 Assumptions
+
+/vaw/www/html already mounted to /var/www/html
+
+Load balancer already configured
+
+Firewall allows port 3001 internally
+
+🔹 Pre-Checks
+df -h | grep /var/www/html
+
+
+✔ Confirms shared storage mount
+
+3️⃣ Exact Commands (Step-by-Step)
+🔹 A. Install Apache, PHP & Dependencies (ALL APP SERVERS)
+📍 Servers: stapp01, stapp02, stapp03
+Step 1: Install packages
+sudo yum install -y httpd php php-mysqlnd php-cli php-common php-gd php-xml php-mbstring
+
+🔍 Explanation
+
+httpd → Apache web server
+
+php → Core PHP engine
+
+php-mysqlnd → Native MariaDB/MySQL driver
+
+Other modules → Required for WordPress compatibility
+
+✔ Why best?
+Uses official OS repositories — stable and production-safe.
+
+🔹 B. Configure Apache to Listen on Port 3001
+Step 2: Modify Apache port
+sudo vi /etc/httpd/conf/httpd.conf
+
+
+Change:
+
+Listen 80
+
+
+To:
+
+Listen 3001
+
+🔍 Why?
+
+Avoids conflict with other services
+
+Allows LB-based routing
+
+Common enterprise practice
+
+Step 3: Ensure correct DocumentRoot
+DocumentRoot "/var/www/html"
+
+Step 4: Start & enable Apache
+sudo systemctl enable httpd
+sudo systemctl restart httpd
+
+🔹 C. Install & Configure MariaDB (DB SERVER)
+Step 5: Install MariaDB
+sudo yum install -y mariadb-server
+
+Step 6: Start & enable service
+sudo systemctl enable mariadb
+sudo systemctl start mariadb
+
+🔹 D. Create Database & User
+Step 7: Login to MariaDB
+mysql -u root
+
+Step 8: Execute SQL
+CREATE DATABASE kodekloud_db7;
+CREATE USER 'kodekloud_cap'@'%' IDENTIFIED BY 'Rc5C9EyvbU';
+GRANT ALL PRIVILEGES ON kodekloud_db7.* TO 'kodekloud_cap'@'%';
+FLUSH PRIVILEGES;
+EXIT;
+
+🔍 Explanation
+
+% → Allows access from app servers
+
+GRANT ALL → Full DB control
+
+FLUSH PRIVILEGES → Apply changes immediately
+
+✔ Enterprise Note:
+Access scoped to one database only — principle of least privilege.
+
+🔹 E. Validate Application DB Connectivity
+
+Ensure your WordPress / PHP app contains DB credentials and outputs:
+
+“App is able to connect to the database using user kodekloud_cap”
+
+Load the app via LBR → App button.
+
+4️⃣ Verification & Validation
+🔹 App Servers
+ss -tulnp | grep 3001
+
+
+✔ Apache listening on port 3001
+
+systemctl status httpd
+
+
+✔ Service running
+
+🔹 DB Server
+mysql -u kodekloud_cap -p -h <DB_SERVER_IP> kodekloud_db7
+
+
+✔ Successful login confirms connectivity
+
+🔹 Final Validation
+
+Open Load Balancer URL
+
+Click App
+
+Confirm success message displayed
+
+5️⃣ Errors & Troubleshooting
+Issue	Cause	Fix
+Port not accessible	Apache not listening	Check Listen 3001
+DB connection fails	Wrong privileges	Re-run GRANT
+PHP errors	Missing module	Install php-mysqlnd
+Blank page	SELinux	setenforce 0 (temp test)
+6️⃣ Security & Best Practices
+
+✔ Database isolated from app tier
+✔ No root DB access from app
+✔ Shared storage for consistency
+✔ Non-default port usage
+✔ Least privilege DB user
+
+🔁 Alternatives
+
+PHP-FPM + Nginx (better performance)
+
+Secrets stored in vault (HashiCorp, AWS SSM)
+
+7️⃣ Final Task Summary
+
+Installed Apache & PHP on all app servers
+
+Configured Apache on port 3001
+
+Deployed MariaDB on DB server
+
+Created secure database & user
+
+Verified end-to-end access via Load Balancer
+
+✅ Status: Successful
