@@ -1,0 +1,174 @@
+The Nautilus application development team has shared that they are planning to deploy one newly developed application on Nautilus infra in Stratos DC. The application uses PostgreSQL database, so as a pre-requisite we need to set up PostgreSQL database server as per requirements shared below: PostgreSQL database server is already installed on the Nautilus database server. a. Create a database user kodekloud_cap and set its password to ksH85UJjhb. b. Create a database kodekloud_db9 and grant full permissions to user kodekloud_cap on this database. Note: Please do not try to restart PostgreSQL server service.
+
+  1️⃣ Task Understanding
+
+Task in simple words:
+We need to set up a PostgreSQL user and database on the existing PostgreSQL server for a new application deployment:
+
+Create a database user: kodekloud_cap
+
+Assign a secure password: ksH85UJjhb
+
+Create a database: kodekloud_db9
+
+Grant full privileges of this database to kodekloud_cap
+
+Why this is required in enterprise environments:
+
+Enterprise applications often require separate databases per application to isolate data and ensure security.
+
+Each application should have a dedicated database user with limited privileges for better access control and auditing.
+
+Avoiding service restarts reduces downtime for existing production services.
+
+Server(s) this task applies to:
+
+The PostgreSQL database server in Stratos DC.
+
+We do not touch app servers or the load balancer because this task is database-specific.
+
+2️⃣ Prerequisites & Assumptions
+
+Required user access:
+
+sudo or root access on the PostgreSQL server.
+
+Ability to switch to the PostgreSQL system user (postgres) or connect using a superuser.
+
+Required services/files:
+
+PostgreSQL service must be running (already mentioned in task).
+
+psql command-line tool installed (comes with PostgreSQL).
+
+Important checks before starting:
+
+Check PostgreSQL service status:
+
+sudo systemctl status postgresql
+
+
+Check PostgreSQL version (optional, for compatibility):
+
+psql --version
+
+
+Ensure you have access to psql as superuser:
+
+sudo -u postgres psql
+
+3️⃣ Exact Commands (Step-by-Step)
+Step 1: Switch to PostgreSQL superuser
+sudo -i -u postgres
+
+
+Explanation:
+
+sudo -i -u postgres switches to the PostgreSQL system user postgres who has superuser privileges in PostgreSQL.
+
+Needed because normal Linux users cannot create databases or roles in PostgreSQL by default.
+
+Step 2: Create the database user with password
+createuser kodekloud_cap --pwprompt --encrypted
+
+
+createuser kodekloud_cap → creates a new PostgreSQL user named kodekloud_cap.
+
+--pwprompt → prompts for a password interactively (safer than storing in plaintext).
+
+--encrypted → ensures password is stored securely using MD5 hashing.
+
+Alternative single-line command:
+
+psql -c "CREATE USER kodekloud_cap WITH ENCRYPTED PASSWORD 'ksH85UJjhb';"
+
+
+-c executes SQL command directly without opening interactive shell.
+
+Step 3: Create the database
+createdb kodekloud_db9
+
+
+createdb kodekloud_db9 → creates a new database named kodekloud_db9.
+
+By default, owner is the user running the command (postgres).
+
+Alternative in SQL:
+
+psql -c "CREATE DATABASE kodekloud_db9 OWNER postgres;"
+
+Step 4: Grant privileges
+psql -c "GRANT ALL PRIVILEGES ON DATABASE kodekloud_db9 TO kodekloud_cap;"
+
+
+Grants full access (SELECT, INSERT, UPDATE, DELETE, CREATE, CONNECT) to user kodekloud_cap.
+
+Ensures the application can fully manage its own database without affecting others.
+
+Step 5: Exit PostgreSQL
+exit
+
+
+Return to your normal Linux user after database setup.
+
+4️⃣ Verification & Validation
+Check user exists
+psql -c "\du"
+
+
+Expected output snippet:
+
+  Role name   | Attributes | Member of
+--------------+------------+-----------
+ kodekloud_cap |            | {}
+ postgres      | Superuser  | {}
+
+Check database exists
+psql -l
+
+
+Expected output snippet:
+
+   Name       | Owner    | Encoding | Collate | Ctype | Access privileges
+--------------+---------+----------+---------+-------+------------------
+ kodekloud_db9 | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+
+Test login as new user
+psql -U kodekloud_cap -d kodekloud_db9 -h localhost -W
+
+
+-U → username
+
+-d → database name
+
+-h localhost → connect locally
+
+-W → prompt for password
+
+If login succeeds and you can run SQL commands, setup is complete.
+
+5️⃣ Errors & Troubleshooting
+Error	Reason	Solution
+role "kodekloud_cap" already exists	User exists from previous attempt	Drop existing user: dropuser kodekloud_cap
+database "kodekloud_db9" already exists	Database exists	Drop database: dropdb kodekloud_db9
+psql: FATAL: password authentication failed	Wrong password or permissions	Ensure correct password; re-create user if needed
+permission denied	Not using postgres superuser	Use sudo -i -u postgres before creating roles/databases
+6️⃣ Security & Best Practices
+
+Use strong passwords: ksH85UJjhb is secure.
+
+Do not give superuser to app users: Only grant privileges needed.
+
+Avoid plaintext in scripts: Use --pwprompt instead of hardcoding passwords in production.
+
+No service restarts: Changes take effect immediately, avoiding downtime.
+
+Backups: Always backup important databases before making changes.
+
+7️⃣ Final Task Summary
+
+What was done: Created a PostgreSQL user kodekloud_cap, created database kodekloud_db9, granted full privileges.
+
+Server: PostgreSQL database server in Stratos DC.
+
+Final result: ✅ User and database ready for application deployment.
