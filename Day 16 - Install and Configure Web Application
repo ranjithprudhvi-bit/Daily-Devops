@@ -1,0 +1,264 @@
+xFusionCorp Industries is planning to host two static websites on their infra in Stratos Datacenter. The development of these websites is still in-progress, but we want to get the servers ready. Please perform the following steps to accomplish the task: a. Install httpd package and dependencies on app server 3. b. Apache should serve on port 5003. c. There are two website's backups /home/thor/news and /home/thor/games on jump_host. Set them up on Apache in a way that news should work on the link http://localhost:5003/news/ and games should work on link http://localhost:5003/games/ on the mentioned app server. d. Once configured you should be able to access the website using curl command on the respective app server, i.e curl http://localhost:5003/news/ and curl http://localhost:5003/games/
+
+1️⃣ Task Understanding
+🔍 What is the task?
+
+xFusionCorp wants to prepare infrastructure to host two static websites (news and games) on App Server 3 using Apache HTTPD, even though development is still ongoing.
+
+You must:
+
+Install Apache (httpd)
+
+Configure Apache to listen on non-default port 5003
+
+Deploy two static sites as path-based URLs
+
+Verify access locally using curl
+
+🏢 Why is this required in a real enterprise?
+
+In real-world environments:
+
+Infrastructure readiness happens before application go-live
+
+Dev teams deploy content later without infra changes
+
+Non-standard ports are often used behind load balancers
+
+Static sites reduce backend load and improve performance
+
+Separation of sites via URL paths simplifies routing
+
+This is standard pre-production infrastructure setup.
+
+🖥️ Which server(s) does this apply to?
+Server	Reason
+App Server 3 (stapp03)	Hosts Apache and serves websites
+Jump Server	Only source of website backups
+
+No load balancer changes are required yet.
+
+2️⃣ Prerequisites & Assumptions
+🔐 Required Access
+
+SSH access to stapp03
+
+sudo privileges (or root)
+
+sudo -i
+
+📦 Required Packages & Services
+
+httpd
+
+firewalld (already running in most Nautilus tasks)
+
+Website files present on jump_host
+
+✅ Pre-Checks (MANDATORY)
+hostname
+
+
+➡️ Ensure you are on stapp03
+
+getenforce
+
+
+➡️ SELinux status (important for non-standard ports)
+
+rpm -q httpd
+
+
+➡️ Confirms Apache is not already installed
+
+3️⃣ Exact Commands (Step-by-Step)
+🔹 Step 1: Install Apache HTTPD
+sudo yum install -y httpd
+
+Explanation
+
+yum → Enterprise package manager (RHEL/CentOS)
+
+-y → Non-interactive (automation friendly)
+
+Installs Apache and all required dependencies
+
+✔️ Best practice: vendor-supported package only
+
+🔹 Step 2: Configure Apache to Listen on Port 5003
+
+Edit Apache ports configuration:
+
+sudo vi /etc/httpd/conf/httpd.conf
+
+Find:
+Listen 80
+
+Replace with:
+Listen 5003
+
+Why?
+
+Port 80 is default
+
+Port 5003 avoids conflicts
+
+Common behind load balancers in enterprise setups
+
+🔹 Step 3: Create Website Directories
+sudo mkdir -p /var/www/html/news
+sudo mkdir -p /var/www/html/games
+
+Why /var/www/html?
+
+Apache default DocumentRoot
+
+Follows Filesystem Hierarchy Standard (FHS)
+
+🔹 Step 4: Copy Website Backups from Jump Server
+
+Run this from App Server 3
+
+scp -r thor@jump_host:/home/thor/news/* /var/www/html/news/
+scp -r thor@jump_host:/home/thor/games/* /var/www/html/games/
+
+Explanation
+
+scp -r → Recursive secure copy
+
+Preserves directory structure
+
+Secure internal transfer
+
+✔️ Enterprise-safe data movement
+
+🔹 Step 5: Set Correct Ownership & Permissions
+sudo chown -R apache:apache /var/www/html/news /var/www/html/games
+sudo chmod -R 755 /var/www/html/news /var/www/html/games
+
+Why?
+
+Apache runs as apache user
+
+755 → Read-only for public, writable only by owner
+
+Prevents unauthorized modifications
+
+🔹 Step 6: Configure Apache Paths (Optional but Enterprise-Clean)
+
+Create a config file:
+
+sudo vi /etc/httpd/conf.d/static-sites.conf
+
+
+Add:
+
+Alias /news /var/www/html/news
+Alias /games /var/www/html/games
+
+<Directory /var/www/html/news>
+    AllowOverride None
+    Require all granted
+</Directory>
+
+<Directory /var/www/html/games>
+    AllowOverride None
+    Require all granted
+</Directory>
+
+Why this is best practice?
+
+Clean separation
+
+Scalable for future sites
+
+Explicit access control
+
+🔹 Step 7: Allow Port 5003 in Firewall
+sudo firewall-cmd --permanent --add-port=5003/tcp
+sudo firewall-cmd --reload
+
+
+✔️ Production firewall-safe change
+
+🔹 Step 8: Allow Apache to Bind to Port 5003 (SELinux)
+sudo semanage port -a -t http_port_t -p tcp 5003
+
+
+If semanage missing:
+
+sudo yum install -y policycoreutils-python-utils
+
+🔹 Step 9: Start & Enable Apache
+sudo systemctl start httpd
+sudo systemctl enable httpd
+
+4️⃣ Verification & Validation
+✅ Check Apache Status
+systemctl status httpd
+
+
+Expected:
+
+Active: active (running)
+
+✅ Verify Port Listening
+ss -lntp | grep 5003
+
+
+Expected:
+
+LISTEN 0 128 *:5003
+
+✅ Validate Websites via Curl
+curl http://localhost:5003/news/
+curl http://localhost:5003/games/
+
+
+Expected:
+
+HTML content output
+
+No errors
+
+✅ Apache Syntax Check
+apachectl configtest
+
+
+Expected:
+
+Syntax OK
+
+5️⃣ Errors & Troubleshooting
+Error	Cause	Fix
+Connection refused	Firewall	Add port 5003
+Permission denied	SELinux	semanage port
+403 Forbidden	Permissions	Fix ownership
+Apache won’t start	Config error	apachectl configtest
+6️⃣ Security & Best Practices
+
+✅ Non-root service execution
+✅ Least-privilege permissions
+✅ SELinux enforced
+✅ Firewall explicitly opened
+✅ Modular Apache config
+
+Alternatives
+
+Nginx (lighter, but Apache preferred for legacy stacks)
+
+VirtualHosts (used when domains exist)
+
+7️⃣ Final Task Summary
+
+Apache installed & configured
+
+Port 5003 enabled
+
+Two static sites deployed
+
+Verified using curl
+
+Server: App Server 3 (stapp03)
+
+Status: ✅ Successful
