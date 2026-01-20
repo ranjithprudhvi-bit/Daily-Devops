@@ -1,0 +1,451 @@
+Day by day traffic is increasing on one of the websites managed by the Nautilus production support team. Therefore, the team has observed a degradation in website performance. Following discussions about this issue, the team has decided to deploy this application on a high availability stack i.e on Nautilus infra in Stratos DC. They started the migration last month and it is almost done, as only the LBR server configuration is pending. Configure LBR server as per the information given below: a. Install nginx on LBR (load balancer) server. b. Configure load-balancing with the an http context making use of all App Servers. Ensure that you update only the main Nginx configuration file located at /etc/nginx/nginx.conf. c. Make sure you do not update the apache port that is already defined in the apache configuration on all app servers, also make sure apache service is up and running on all app servers. d. Once done, you can access the website using StaticApp button on the top bar.
+
+What is the task?
+
+You are required to configure the Load Balancer (LBR) server using Nginx so that incoming web traffic is distributed across multiple application servers (stapp01, stapp02, stapp03).
+
+This involves:
+
+Installing Nginx on the LBR server
+
+Configuring HTTP load balancing
+
+Pointing Nginx to existing Apache services running on app servers
+
+Ensuring no changes are made on Apache ports
+
+Making the website accessible via the StaticApp button
+
+🔹 Why is this required in real enterprises?
+
+As traffic increases:
+
+A single server becomes a bottleneck
+
+Website performance degrades
+
+Downtime risk increases
+
+Load balancing provides:
+
+High Availability (HA) – if one app server fails, others serve traffic
+
+Scalability – traffic is shared
+
+Performance improvement
+
+Fault tolerance
+
+This is a standard production architecture in enterprises.
+
+🔹 Which servers does this apply to?
+Server	Role	Why
+LBR Server	Load Balancer	Nginx distributes traffic
+stapp01–03	App Servers	Run Apache + PHP
+Client (Browser)	End User	Accesses via LB
+
+⚠️ Only the LBR server is modified
+App servers must remain unchanged.
+
+2️⃣ Prerequisites & Assumptions
+🔹 Required Access
+
+root or sudo access on LBR server
+
+SSH access to app servers (for verification only)
+
+🔹 Required Services
+
+Apache already installed & running on:
+
+stapp01
+
+stapp02
+
+stapp03
+
+Apache port (usually 80) must not be changed
+
+🔹 Important Pre-Checks
+Check Apache status on app servers
+sudo systemctl status httpd
+
+
+Expected:
+
+Active: active (running)
+
+Check Apache listening port
+sudo ss -tulnp | grep httpd
+
+
+Expected:
+
+LISTEN 0 128 *:80
+
+3️⃣ Exact Commands (Step-by-Step)
+🔹 Step 1: Login to LBR Server
+ssh root@lbr
+
+
+Why:
+All load balancing is done on the Load Balancer server only.
+
+🔹 Step 2: Install Nginx
+Command
+sudo yum install -y nginx
+
+Explanation
+
+yum → Enterprise package manager (RHEL/CentOS)
+
+install → Installs the package
+
+-y → Auto-confirms prompts
+
+nginx → Load balancer software
+
+Why this is best
+
+Stable
+
+Lightweight
+
+Industry-standard reverse proxy & load balancer
+
+🔹 Step 3: Edit Main Nginx Configuration File
+
+⚠️ Only edit this file
+
+sudo vi /etc/nginx/nginx.conf
+
+🔹 Step 4: Configure HTTP Load Balancing
+
+Inside http {} block, add:
+
+upstream backend_servers {
+    server stapp01:80;
+    server stapp02:80;
+    server stapp03:80;
+}
+
+server {
+    listen 80;
+    location / {
+        proxy_pass http://backend_servers;
+    }
+}
+
+Line-by-Line Explanation
+Line	Purpose
+upstream backend_servers	Defines backend pool
+server stapp01:80	App server 1
+server stapp02:80	App server 2
+server stapp03:80	App server 3
+listen 80	LB listens on HTTP
+proxy_pass	Forwards requests
+Why this approach?
+
+Uses default round-robin
+
+No app-server modification
+
+Simple, production-safe
+
+Scales easily
+
+🔹 Step 5: Test Nginx Configuration
+sudo nginx -t
+
+
+Expected:
+
+syntax is ok
+test is successful
+
+🔹 Step 6: Start & Enable Nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+
+Why:
+
+start → Activate now
+
+enable → Persist after reboot
+
+4️⃣ Verification & Validation
+🔹 Check Nginx Service
+sudo systemctl status nginx
+
+
+Expected:
+
+Active: active (running)
+
+🔹 Check Listening Port
+sudo ss -tulnp | grep nginx
+
+
+Expected:
+
+LISTEN 0 128 *:80
+
+🔹 Functional Validation
+
+Click StaticApp button
+
+Refresh page multiple times
+
+Requests are served via LB
+
+5️⃣ Errors & Troubleshooting
+❌ Error: 502 Bad Gateway
+
+Cause: Apache down on app server
+Fix:
+
+sudo systemctl start httpd
+
+❌ Error: nginx: configuration file test failed
+
+Cause: Syntax error
+Fix:
+
+Recheck braces { }
+
+Ensure config is inside http {}
+
+❌ Website not loading
+
+Cause: Firewall or service down
+Fix:
+
+sudo systemctl restart nginx
+
+6️⃣ Security & Best Practices
+🔹 Security Considerations
+
+No root exposure to clients
+
+App servers hidden behind LB
+
+Can later add:
+
+SSL/TLS
+
+WAF
+
+Rate limiting
+
+🔹 Why Nginx?
+
+Battle-tested
+
+High performance
+
+Minimal memory footprint
+
+🔹 Alternatives
+
+HAProxy
+
+AWS ALB (cloud)
+
+F5 (enterprise hardware)
+
+7️⃣ Final Task Summary
+
+Installed: Nginx
+
+Configured: HTTP Load Balancer
+
+Servers Used: stapp01, stapp02, stapp03
+
+Modified Server: LBR only
+
+Apache: Unchanged
+
+Result: High availability achieved
+
+✅ Status: Successful
+
+Nginx Load Balancer Task
+
+Prepared by: Ranjith Neerati
+Environment: Stratos Datacenter, Nautilus Project
+
+1️⃣ Task Understanding
+
+Task in Simple Words:
+
+You were asked to set up a Nginx Load Balancer (LBR) on the server stlb01.
+
+The load balancer should distribute incoming web traffic to three backend application servers (stapp01, stapp02, stapp03) running Apache on port 3002.
+
+The LBR should not serve any static content itself, only proxy requests to the backend servers.
+
+Why this task exists in real-world enterprise environments:
+
+Applications often receive high traffic; a single server may slow down.
+
+A load balancer improves performance, scalability, and reliability by distributing traffic.
+
+It allows backend servers to be maintained individually without downtime for users.
+
+Ensures security by preventing direct access to backend servers and local files.
+
+Which system/server/component it applies to and why:
+
+Component	Role in this task
+stlb01 (LBR)	Nginx server acting as load balancer
+stapp01/02/03	Apache web servers serving application content
+Port 3002	Application servers’ listening port for HTTP traffic
+2️⃣ Technical Terms Explained
+Term	Explanation (Beginner-Friendly)	Importance for Task
+Nginx	A web server that can also act as a reverse proxy	Handles traffic from users and sends it to backend servers
+Load Balancer (LBR)	A server that distributes incoming traffic across multiple servers	Prevents any one server from being overloaded
+Apache (httpd)	Web server software running the actual application	Provides content that the LB proxies
+Upstream	Nginx directive defining a group of backend servers	Allows Nginx to distribute traffic to multiple servers
+Proxy_pass	Nginx directive to forward requests to another server	Enables Nginx to act as a reverse proxy
+Root directive	Defines local directory to serve static content	Must be avoided on LB to prevent accidental static serving
+Port	Numeric address where a service listens for connections	Backend apps are on 3002; LB listens on 80
+Curl	Linux command-line tool to test HTTP requests	Used to verify LB and backend servers are responding
+nginx -t	Test Nginx configuration syntax	Prevents syntax errors from crashing Nginx in production
+3️⃣ Commands Breakdown
+a) Test Nginx Configuration
+sudo nginx -t
+
+
+Explanation:
+
+sudo → run as root, needed because Nginx config is root-owned
+
+nginx → runs the Nginx program
+
+-t → tests the configuration syntax without starting Nginx
+
+Real-world example:
+
+Before restarting Nginx, always run nginx -t to avoid downtime due to syntax errors.
+
+b) Restart Nginx
+sudo systemctl restart nginx
+
+
+Explanation:
+
+systemctl → manages system services in modern Linux systems
+
+restart → stops and starts Nginx, applying new config
+
+nginx service is restarted on LB server
+
+Example:
+
+If you changed the upstream servers, this ensures traffic flows to the updated servers.
+
+c) Check LB response
+curl -I http://stlb01
+
+
+Explanation:
+
+curl → command-line HTTP client
+
+-I → fetch only HTTP headers
+
+http://stlb01 → LB server URL
+
+Expected Output:
+
+HTTP/1.1 200 OK
+Server: nginx/1.20.1
+
+d) Check backend response
+curl -I http://stapp01:3002
+
+
+Explanation:
+
+Confirms that Apache is running on port 3002
+
+Server header shows Apache/2.4.62
+
+e) Check for accidental local root
+sudo nginx -T | grep root
+
+
+Explanation:
+
+-T → dumps full Nginx config
+
+grep root → searches for root directives
+
+Ensures no LB root is active
+
+4️⃣ Mistakes & Learning
+Mistake 1 – LB serving static content
+
+Why: Original config included root /usr/share/nginx/html or default includes.
+
+Detection: Validator failed with “Website not running on LBR URL”.
+
+Correction: Removed all root directives and disabled includes (conf.d/*.conf & default.d/*.conf).
+
+Mistake 2 – Wrong backend port
+
+Why: Initially may have used port 5001 instead of 3002.
+
+Detection: curl to LB showed LB headers but backend not responding correctly.
+
+Correction: Updated upstream servers to use port 3002.
+
+Lesson Learned:
+
+Always confirm backend port and remove static content from LB.
+
+Use curl -I and nginx -T | grep root before submitting.
+
+5️⃣ Verification & Validation
+
+Test Nginx syntax: nginx -t → success means no syntax errors.
+
+Restart Nginx: systemctl restart nginx → applies config safely.
+
+Curl LB: curl -I http://stlb01 → Server: nginx and HTTP 200
+
+Curl backend: curl -I http://stapp01:3002 → Server: Apache/2.4.62
+
+Check root: nginx -T | grep root → nothing active
+
+Why it matters:
+
+Ensures traffic flows through LB to correct backend servers.
+
+Prevents accidental static file exposure.
+
+Success Output: HTTP 200, Server: nginx, backend servers reachable
+Failure Output: Static page or validator error “Website not running on LBR URL”
+
+6️⃣ Security & Best Practices
+
+No root directive → prevents LB from serving local files
+
+Restricted includes → prevents accidental config override
+
+Proper upstream configuration → avoids downtime if backend changes
+
+Why safe: Traffic only goes through LB to backend, no direct access to local files.
+
+What could go wrong: Serving local static content or wrong port → security breach or validator failure
+
+Alternative: Use dedicated reverse proxy configs in /etc/nginx/conf.d/lb.conf instead of editing main config.
+
+7️⃣ Final Task Summary
+Aspect	Details
+What was done	Configured Nginx LBR to proxy traffic to 3 Apache servers on port 3002
+Server/System	stlb01 (Nginx), stapp01/02/03 (Apache)
+Tools/Commands	Nginx, curl, systemctl
+Outcome	Traffic successfully proxied; validator passed
+Status	✅ Successful
